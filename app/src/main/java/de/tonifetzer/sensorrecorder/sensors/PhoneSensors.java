@@ -96,7 +96,7 @@ public class PhoneSensors extends MySensor implements SensorEventListener{
 		} else {
 			sb.append("\tnot available!\n");
 		}
-		sb.append("\n");
+		sb.append(NL);
 	}
 
     @Override
