@@ -2,6 +2,8 @@ package de.tonifetzer.sensorrecorder.sensors;
 
 import android.app.Activity;
 
+import co.nstant.in.cbor.CborException;
+
 /**
  * base-class for all Sensors
  */
@@ -13,7 +15,9 @@ public abstract class MySensor {
 		public void onData(final String csv);
 
 		/** received data from the given sensor */
-        public void onData(final SensorType id, final String csv);
+        public void onData(final SensorType id, final String csv) throws CborException;
+
+        public void onData(final Entry entry) throws CborException;
 
 	}
 

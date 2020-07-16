@@ -50,30 +50,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textViewFilename" />
 
-    <TextView
-        android:id="@+id/textViewTimeCounter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00"
-        android:textColor="#ffffff"
-        android:textSize="48dp"
-        app:layout_constraintBottom_toTopOf="@+id/toggleButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.494"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.941" />
-
-    <Button
-        android:id="@+id/buttonPlotter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="88dp"
-        android:text="Show Dataplot"
-        app:layout_constraintStart_toStartOf="@+id/toggleButton"
-        app:layout_constraintTop_toBottomOf="@+id/toggleButton" />
-
 </android.support.constraint.ConstraintLayout>

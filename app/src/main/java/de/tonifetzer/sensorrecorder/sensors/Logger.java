@@ -4,8 +4,18 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.List;
+
+import co.nstant.in.cbor.CborBuilder;
+import co.nstant.in.cbor.CborEncoder;
+import co.nstant.in.cbor.CborException;
+import co.nstant.in.cbor.builder.ArrayBuilder;
+import co.nstant.in.cbor.model.DataItem;
+
+import android.provider.Settings.Secure;
 
 /**
  * log sensor data to file
@@ -15,9 +25,16 @@ public final class Logger {
 	private static final int FLUSH_LIMIT = 2*1024*1024;
 
 	private StringBuilder sb = new StringBuilder();
+	final CborBuilder cborBuilder = new CborBuilder();
+	ArrayBuilder arrayBuilder;
+	ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	CborEncoder cborEncoder = new CborEncoder(baos);
+	CborEncoder encoder;
 	private File file;
 	private FileOutputStream fos;
 	private Context context;
+
+	private String androidId;
 
 	private int entries = 0;
 	private int sizeCurrent = 0;
@@ -33,11 +50,15 @@ public final class Logger {
 	/** start logging (into RAM) */
 	public final void start() {
 
+		androidId = Secure.getString(context.getContentResolver(),
+				Secure.ANDROID_ID);
+
 		// start empty
 		sb.setLength(0);
 		entries = 0;
 		sizeTotal = 0;
 		sizeCurrent = 0;
+
 
 		// starting timestamp
 		startTS = System.currentTimeMillis();
@@ -45,7 +66,7 @@ public final class Logger {
 		// open the output-file immeditaly (to get permission errors)
 		// but do NOT yet write anything to the file
 		final DataFolder folder = new DataFolder(context, "sensorOutFiles");
-		file = new File(folder.getFolder(), startTS + ".csv");
+		file = new File(folder.getFolder(), startTS + ".cbor");
 
 		try {
 			fos = new FileOutputStream(file);
@@ -54,11 +75,15 @@ public final class Logger {
 			throw new MyException("error while opening log-file", e);
 		}
 
+		arrayBuilder = cborBuilder.addArray();
+		arrayBuilder.add(startTS);
+		arrayBuilder.add(androidId);
 	}
 
 	/** stop logging and flush RAM-data to the flash-chip */
-	public final void stop() {
+	public final void stop() throws CborException {
 		synchronized (this) {
+			arrayBuilder.end();
 			flush(true);
 			close();
 		}
@@ -74,7 +99,7 @@ public final class Logger {
 	public int getNumEntries() {return entries;}
 
 	/** add a new CSV entry for the given sensor number to the internal buffer */
-	public final void addCSV(final SensorType sensorNr, final String csv) {
+	public final void addCSV(final SensorType sensorNr, final String csv) throws CborException {
 		synchronized (this) {
 			final long relTS = System.currentTimeMillis() - startTS;
 			sb.append(relTS);	// relative timestamp (uses less space)
@@ -82,6 +107,7 @@ public final class Logger {
 			sb.append(sensorNr.id());
 			sb.append(';');
 			sb.append(csv);
+			Log.d("TAG", "addCSV: " + csv);
 			sb.append('\n');
 			++entries;
 			sizeTotal += csv.length() + 10; // approx!
@@ -91,6 +117,20 @@ public final class Logger {
 
 		debug();
 	}
+
+	public final void addEntry(final Entry entry) {
+		synchronized (this) {
+			final long relTS = entry.getTs() - startTS;
+			arrayBuilder.addArray()
+					.add(relTS)
+					.add(entry.getX())
+					.add(entry.getY())
+					.add(entry.getZ())
+					.add(entry.getSensorId())
+					.end();
+		}
+	}
+
 
 
 
@@ -114,13 +154,17 @@ public final class Logger {
 	};
 
 	/** flush current buffer-contents to disk */
-	private final void flush(boolean sync) {
+	private final void flush(boolean sync) throws CborException {
 
 		// fetch current buffer contents to write and hereafter empty the buffer
 		// this action MUST be atomic, just like the add-method
 		byte[] data = null;
 		synchronized (this) {
-			data = sb.toString().getBytes();		// fetch data to write
+			//TODO data = Byte
+			cborEncoder.encode(cborBuilder.build());
+			data = baos.toByteArray();
+			Log.d("baos", "flush: " + data.toString());
+//			data = sb.toString().getBytes();		// fetch data to write
 			sb.setLength(0);						// reset the buffer
 			sizeCurrent = 0;
 		}
